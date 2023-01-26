@@ -4,10 +4,11 @@ import {
   Delete,
   Get,
   Post,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GetFile, LocalFileInterceptor } from '../common';
+import { AuthGuard, GetFile, LocalFileInterceptor } from '../common';
 import { S3Service } from './s3.service';
 import { UploadFile } from './use-cases/UploadFile';
 
@@ -27,6 +28,7 @@ export class S3Controller {
   }
 
   @Post()
+  @UseGuards(AuthGuard)
   @UseInterceptors(LocalFileInterceptor())
   uploadFile(
     @Body('folder') folder: string,
@@ -35,6 +37,7 @@ export class S3Controller {
     return this.uploadFileUseCase.call(folder, file);
   }
 
+  @UseGuards(AuthGuard)
   @Delete()
   async deleteFile(@Body('key') key: string) {
     await this.s3Service.delete(key);
