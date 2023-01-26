@@ -1,10 +1,21 @@
-import { Body, Controller, Post, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseInterceptors } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { GetFile, LocalFileInterceptor } from '../common';
 import { UploadFile } from './use-cases/UploadFile';
 
 @Controller()
 export class S3Controller {
-  constructor(private uploadFileUseCase: UploadFile) {}
+  constructor(
+    private configService: ConfigService,
+    private uploadFileUseCase: UploadFile,
+  ) {}
+
+  @Get('bucket-url')
+  getBuckerURL() {
+    return {
+      bucketUrl: this.configService.get<string>('AWS.S3_URL'),
+    };
+  }
 
   @Post('upload')
   @UseInterceptors(LocalFileInterceptor())
