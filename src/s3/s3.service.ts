@@ -1,22 +1,25 @@
-import * as AWS from 'aws-sdk';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { readFile } from 'fs/promises';
 
 @Injectable()
 export class S3Service {
-  private S3Client: AWS.S3;
+  private S3Client: S3Client;
 
   constructor(private configService: ConfigService) {
-    AWS.config.update({
+    this.S3Client = new S3Client({
+      apiVersion: '2006-03-01',
       region: this.configService.get<string>('AWS.REGION'),
       credentials: {
         accessKeyId: this.configService.get<string>('AWS.ACCESS_KEY'),
         secretAccessKey: this.configService.get<string>('AWS.SECRET_KEY'),
       },
     });
-
-    this.S3Client = new AWS.S3({ apiVersion: '2006-03-01' });
   }
 
   /**
@@ -31,12 +34,14 @@ export class S3Service {
 
     const fileContent = await readFile(`${filesFolder}/${filename}`);
 
-    await this.S3Client.upload({
-      Bucket: this.configService.get<string>('AWS.BUCKET_NAME'),
+    const uploadCommand = new PutObjectCommand({
       Key: key,
+      Bucket: this.configService.get<string>('AWS.BUCKET_NAME'),
       ContentType: mimetype,
       Body: fileContent,
-    }).promise();
+    });
+
+    await this.S3Client.send(uploadCommand);
   }
 
   /**
@@ -45,9 +50,11 @@ export class S3Service {
    * @param key represents name and location of file on S3
    */
   async delete(key: string) {
-    await this.S3Client.deleteObject({
-      Bucket: this.configService.get<string>('AWS.BUCKET_NAME'),
+    const deleteCommand = new DeleteObjectCommand({
       Key: key,
-    }).promise();
+      Bucket: this.configService.get<string>('AWS.BUCKET_NAME'),
+    });
+
+    await this.S3Client.send(deleteCommand);
   }
 }
